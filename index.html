@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="auto">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Matrizen‑Rechner S4 (Schnittspiel & Matrizenbezeichnungen)</title>
+
+  <!-- =============================================================
+       S4 MATRIZEN‑RECHNER – VOLLSTÄNDIG STRUKTURIERTE EIN‑DATEI‑VERSION
+       Autor: Sascha Keilhauer | Datum: 2025‑10‑19
+       Ziel: Maximale Änderbarkeit (Farben, Typo, Größen, Texte, Regeln)
+       Struktur:
+       1) SETTINGS (Design‑Tokens & Presets)
+       2) BASE (Reset & Grundaufbau)
+       3) LAYOUTS (Grid/Spalten/Responsive)
+       4) COMPONENTS (Cards, Buttons, Inputs, Badges, Table, Modal)
+       5) PAGES (Hero, Eingaben, Ergebnis)
+       6) UTILITIES (Hilfsklassen)
+       7) APP (HTML‑Struktur)
+       8) SCRIPT (JS‑Module: CONFIG/TEXTS/STATE/RULES/UI/INIT)
+       ============================================================= -->
+
+  <style>
+    /* =============================================================
+       1) = SETTINGS (Design‑Tokens & Presets)
+       Alles anpassbar: Farben, Typo, Abstände, Radien, Schatten, Breakpoints
+       ============================================================= */
+    :root{
+      /* Farbpalette (Dark Default) */
+      --c-bg:#0b0f17;        /* Seitenhintergrund */
+      --c-surface:#121826;   /* Flächen (Inputs/Tabellen) */
+      --c-card:#151c2f;      /* Karten/Hero */
+      --c-text:#e9eef7;      /* Primärtext */
+      --c-muted:#9aa7b9;     /* Sekundärtext */
+      --c-border:#2a3550;    /* Rahmenlinien */
+      --c-accent:#7c3aed;    /* Primärakzent */
+      --c-accent-2:#22d3ee;  /* Sekundärakzent */
+      --c-warn:#f59e0b;      /* Warnfarbe */
+      --c-chip:#1a2240;      /* Chipfläche */
+
+      /* Fokus‑Ring (box‑shadow) */
+      --ring:0 0 0 3px rgba(34,211,238,.5);
+
+      /* Typografie */
+      --font-family: system-ui, Segoe UI, Roboto, Helvetica, Arial;
+      --fs-0: 12px;  /* XS */
+      --fs-1: 14px;  /* S  */
+      --fs-2: 16px;  /* M  (Body) */
+      --fs-3: 18px;  /* L  */
+      --fs-4: clamp(20px,3vw,28px);  /* Title */
+      --fs-5: clamp(18px,4vw,34px);  /* Hero */
+
+      /* Abstände (Scale) */
+      --sp-0: 4px;   --sp-1: 6px;   --sp-2: 8px;   --sp-3: 10px;  --sp-4: 12px;
+      --sp-5: 14px;  --sp-6: 16px;  --sp-7: 18px;  --sp-8: 20px;  --sp-9: 24px;  --sp-10: 28px;
+
+      /* Radien */
+      --r-sm: 10px;  --r-md: 12px;  --r-lg: 14px;  --r-xl: 16px;  --r-2xl: 18px;  --r-pill: 999px;
+
+      /* Schatten */
+      --shadow-card: 0 8px 30px rgba(0,0,0,.18);
+      --shadow-btn:  0 6px 18px rgba(0,240,255,.25), inset 0 0 6px rgba(255,255,255,.1);
+      --shadow-modal:0 20px 60px rgba(0,0,0,.35);
+
+      /* Breakpoints */
+      --bp-sm: 520px;
+      --bp-md: 820px;
+      --bp-lg: 900px;
+
+      /* Komponenten‑Presets */
+      --input-pad: 12px;
+      --btn-pad-y: 10px; --btn-pad-x: 14px;
+      --table-fs: 14px;
+
+      /* Containerbreite */
+      --container-w: 1100px;
+    }
+
+    /* Light Mode Tokens (Auto) */
+    @media (prefers-color-scheme: light){
+      :root{ --c-bg:#f7f8fc; --c-surface:#ffffff; --c-card:#ffffff; --c-text:#0e1320; --c-muted:#445063; --c-border:#e5e7eb; --c-chip:#eef2ff; --ring:0 0 0 3px rgba(124,58,237,.35) }
+    }
+
+    /* Manuelle Theme‑Umschalter */
+    html[data-theme="dark"]{ --c-bg:#0b0f17; --c-surface:#121826; --c-card:#151c2f; --c-text:#e9eef7; --c-muted:#9aa7b9; --c-border:#2a3550; --c-chip:#1a2240; --ring:0 0 0 3px rgba(0,240,255,.45) }
+    html[data-theme="light"]{ --c-bg:#f7f8fc; --c-surface:#ffffff; --c-card:#ffffff; --c-text:#0e1320; --c-muted:#445063; --c-border:#e5e7eb; --c-chip:#eef2ff; --ring:0 0 0 3px rgba(138,43,226,.35) }
+
+    /* =============================================================
+       2) = BASE (Reset & Grundaufbau)
+       ============================================================= */
+    *{ box-sizing:border-box }
+    html,body{ height:100% }
+    body{ margin:0; background:var(--c-bg); color:var(--c-text); font: var(--fs-2)/1.45 var(--font-family); }
+
+    .container{ max-width:var(--container-w); margin:var(--sp-10) auto; padding:0 var(--sp-4); }
+
+    /* Header */
+    .header{ display:flex; gap:var(--sp-4); align-items:center; justify-content:space-between; margin-bottom:var(--sp-4) }
+    .title{ font-size:var(--fs-4); font-weight:800; letter-spacing:.2px }
+    .subtitle{ color:var(--c-muted); font-size:var(--fs-1) }
+
+    /* =============================================================
+       3) = LAYOUTS (Grid/Spalten/Responsive)
+       ============================================================= */
+    .grid{ display:grid; grid-template-columns:repeat(12,1fr); gap:var(--sp-5) }
+    .col-4{ grid-column:span 4 } .col-6{ grid-column:span 6 } .col-8{ grid-column:span 8 } .col-12{ grid-column:span 12 }
+    .row{ display:flex; gap:var(--sp-3) }
+    .row > *{ flex:1 }
+
+    @media (max-width: 900px){ .col-4,.col-6,.col-8{ grid-column:span 12 } }
+
+    /* Top‑Preferences (Theme‑Select) */
+    .top-preferences{ display:flex; gap:var(--sp-3); align-items:center; justify-content:flex-end; margin:0 0 var(--sp-4) 0 }
+    .toppref-label{ color:var(--c-muted); font-size:var(--fs-1) }
+    .toppref-select{ min-width:120px; background:var(--c-surface); border:1px solid var(--c-border); color:var(--c-text); padding:var(--input-pad); border-radius:var(--r-md) }
+
+    @media (max-width: var(--bp-md)){ .container{ margin:var(--sp-6) auto } .header{ align-items:flex-start; gap:var(--sp-3) } }
+    @media (max-width: var(--bp-sm)){ .top-preferences{ justify-content:flex-start; margin-top:var(--sp-1) } }
+
+    /* =============================================================
+       4) = COMPONENTS
+       ============================================================= */
+    .card{ background:var(--c-card); border-radius:var(--r-2xl); padding:var(--sp-7); box-shadow:var(--shadow-card); border:1px solid var(--c-border) }
+
+    label{ display:block; font-size:var(--fs-1); color:var(--c-muted); margin:var(--sp-1) 0 }
+    select,input{ width:100%; background:var(--c-surface); border:1px solid var(--c-border); color:var(--c-text); padding:var(--input-pad); border-radius:var(--r-md); outline:none; box-shadow:inset 0 0 0 1px transparent }
+    select:focus,input:focus{ border-color:var(--c-accent-2); box-shadow: var(--ring), inset 0 0 0 1px rgba(0,240,255,.25) }
+
+    .section-title{ font-weight:800; margin:var(--sp-3) 0 var(--sp-2) }
+
+    /* Buttons */
+    .toolbar{ display:flex; gap:var(--sp-3); flex-wrap:wrap; align-items:center }
+    .btn{ background:linear-gradient(135deg,var(--c-accent-2),var(--c-accent)); color:#fff; border:none; padding:var(--btn-pad-y) var(--btn-pad-x); border-radius:var(--r-md); font-weight:800; cursor:pointer; box-shadow:var(--shadow-btn) }
+    .btn:active{ transform:translateY(1px) }
+    .btn.ghost{ background:transparent; border:1px solid var(--c-border); color:var(--c-text); box-shadow:none }
+
+    /* Badges/Chips */
+    .hero-badges{ display:flex; gap:var(--sp-2); flex-wrap:wrap }
+    .badge{ background:linear-gradient(135deg, var(--c-accent-2), var(--c-accent)); color:#fff; font-weight:800; padding:var(--sp-2) var(--sp-3); border-radius:var(--r-pill); font-size:var(--fs-1); box-shadow:0 0 12px rgba(0,240,255,.45), inset 0 0 6px rgba(138,43,226,.35) }
+    .chip{ background:var(--c-chip); border:1px solid var(--c-border); padding:var(--sp-2) var(--sp-3); border-radius:var(--r-pill); font-size:var(--fs-1) }
+
+    /* Code‑Pills */
+    .codebar{ display:flex; flex-wrap:wrap; gap:var(--sp-2) }
+    .codepill{ display:flex; align-items:center; gap:var(--sp-2); background:var(--c-surface); border:1px dashed var(--c-border); padding:var(--sp-3) var(--sp-4); border-radius:var(--r-md) }
+    .copy{ cursor:pointer; border:none; background:transparent; color:var(--c-accent); font-weight:800 }
+
+    /* Note & Warn */
+    .note{ font-size:var(--fs-1); color:var(--c-muted) }
+    .warn{ background:rgba(245,158,11,.12); border-left:3px solid var(--c-warn); padding:var(--sp-4); border-radius:var(--r-lg); display:none }
+
+    /* Table */
+    .table-wrap{ width:100%; overflow:auto; border-radius:var(--r-md) }
+    table{ width:100%; border-collapse:collapse; border-radius:var(--r-md); overflow:hidden; background:var(--c-surface); table-layout:fixed }
+    th,td{ padding:var(--sp-3); border-bottom:1px solid var(--c-border); text-align:left; font-size:var(--table-fs); word-break:break-word }
+    th{ color:var(--c-muted); font-weight:700 }
+
+    /* Modal */
+    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); backdrop-filter: blur(2px); z-index:1000 }
+    .modal.open{ display:flex }
+    .modal-card{ width:min(900px,92vw); max-height:85vh; overflow:auto; background:var(--c-card); border:1px solid var(--c-border); border-radius:var(--r-xl); box-shadow:var(--shadow-modal) }
+    .modal-head{ display:flex; align-items:center; justify-content:space-between; padding:var(--sp-3) var(--sp-4); border-bottom:1px solid var(--c-border) }
+    .modal-body{ padding:var(--sp-3) var(--sp-4) }
+    .x{ cursor:pointer; border:none; background:transparent; color:var(--c-muted); font-size:20px; line-height:1 }
+    .acc{ border:1px solid var(--c-border); border-radius:var(--r-md); margin:var(--sp-2) 0; overflow:hidden }
+    .acc summary{ list-style:none; cursor:pointer; padding:var(--sp-3); background:var(--c-surface) }
+    .acc[open] summary{ background:#10131a }
+    .acc .inner{ padding:var(--sp-3) }
+    .btn-row{ display:flex; gap:var(--sp-3); flex-wrap:wrap }
+
+    /* Footer */
+    footer{ margin-top:var(--sp-7); color:var(--c-muted); font-size:var(--fs-1); text-align:center }
+
+    /* =============================================================
+       5) = PAGES (Hero)
+       ============================================================= */
+    .result-hero{ display:flex; align-items:center; justify-content:space-between; gap:var(--sp-3) }
+    .hero-text{ font-size:var(--fs-5); font-weight:900; word-break:break-word }
+
+    /* Mobile Tweaks */
+    @media (max-width: var(--bp-md)){
+      .card{ padding:var(--sp-4); border-radius:var(--r-lg) }
+      .title{ font-size:20px }
+      .hero-text{ font-size:22px; line-height:1.2 }
+      .toolbar{ width:100%; gap:var(--sp-2) }
+      .toolbar .btn, .toolbar select{ flex:1 }
+      .hide-sm{ display:none }
+    }
+    @media (max-width: var(--bp-sm)){
+      .badge,.chip{ font-size:10px }
+      th,td{ font-size:12px; padding:var(--sp-2) }
+      .section-title{ margin:var(--sp-2) 0 var(--sp-1) }
+    }
+
+    /* =============================================================
+       6) = UTILITIES
+       ============================================================= */
+    .mt-3{ margin-top:var(--sp-3) } .mt-4{ margin-top:var(--sp-4) } .mt-6{ margin-top:var(--sp-6) } .mt-7{ margin-top:var(--sp-7) }
+    .vis-hidden{ visibility:hidden } .is-hidden{ display:none }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header" aria-label="Seitenkopf">
+      <div>
+        <div class="title">Matrizen‑Rechner S4</div>
+        <div class="subtitle">Schnittspiel & Matrizenbezeichnungen (C / CL / TC)</div>
+      </div>
+      <div class="toolbar" role="group" aria-label="Aktionen">
+        <button class="btn" id="btnReset" type="button">Zurücksetzen</button>
+        <button class="btn ghost" id="btnRef" type="button">Referenzfälle</button>
+      </div>
+    </div>
+
+    <!-- Theme separat (ohne Card) -->
+    <div class="top-preferences" aria-label="Darstellung">
+      <label class="toppref-label" for="themeMode">Theme</label>
+      <select id="themeMode" title="Theme" class="toppref-select">
+        <option value="auto">Auto</option>
+        <option value="dark">Dunkel</option>
+        <option value="light">Hell</option>
+      </select>
+    </div>
+
+    <!-- Hero / Ergebniskopf -->
+    <div class="card" id="heroCard">
+      <div class="result-hero" id="heroWrap">
+        <div>
+          <div class="hero-badges" id="heroBadges"></div>
+          <div class="hero-text" id="heroText">Bitte Eingaben machen</div>
+          <div class="note" id="heroNote"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRID: Eingaben (links) + Ergebnis (rechts) -->
+    <div class="grid mt-6">
+      <!-- Eingaben -->
+      <div class="col-4">
+        <div class="card" aria-labelledby="eingabenTitle">
+          <div class="section-title" id="eingabenTitle">Eingaben</div>
+
+          <label for="shape">Form</label>
+          <select id="shape">
+            <option value="unknown">Form egal</option>
+            <option value="round">Rund (Ø)</option>
+            <option value="square">Quadrat (a)</option>
+            <option value="rect">Rechteck (L×B)</option>
+            <option value="slot">Langloch (L×B)</option>
+            <option value="hex">Hexagonal (SW)</option>
+          </select>
+
+          <div id="dims" class="mt-4" aria-live="polite"></div>
+
+          <div class="row mt-4">
+            <div>
+              <label for="material">Material</label>
+              <select id="material">
+                <option value="unknown">(keine Angabe)</option>
+                <option value="stahl">Stahl</option>
+                <option value="edelstahl">Edelstahl</option>
+                <option value="aluminium">Aluminium</option>
+              </select>
+            </div>
+            <div>
+              <label for="thk">Dicke t [mm]</label>
+              <input id="thk" type="text" inputmode="decimal" placeholder="z. B. 2,0" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ergebnis -->
+      <div class="col-8">
+        <div class="card" aria-labelledby="ergebnisTitle">
+          <div class="section-title" id="ergebnisTitle">Ergebnis</div>
+          <div id="warnBox" class="warn" role="alert"></div>
+
+          <div class="grid mt-4">
+            <div class="col-6">
+              <div class="section-title">Schnittspiel</div>
+              <div class="table-wrap">
+                <table aria-describedby="clrNote">
+                  <thead><tr><th>Material</th><th>gesamt [mm]</th></tr></thead>
+                  <tbody id="tblClearance"></tbody>
+                </table>
+              </div>
+              <div class="note" id="clrNote">Regel: Stahl/Edelstahl t×0,2 · Aluminium t×0,1 (gesamt).</div>
+            </div>
+            <div class="col-6">
+              <div class="section-title">Matrizengröße</div>
+              <div class="table-wrap">
+                <table aria-describedby="matNote">
+                  <thead><tr><th>Form</th><th>Stempel [mm]</th><th>Matrize [mm]</th></tr></thead>
+                  <tbody id="tblMatrix"></tbody>
+                </table>
+              </div>
+              <div class="note" id="matNote">Matrize = Stempelmaß + Schnittspiel (gesamt).</div>
+            </div>
+          </div>
+
+          <div class="mt-6">
+            <div class="section-title">Matrizenbezeichnungen</div>
+            <div class="codebar" id="codeBar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>© 2025 – S4 Matrizen‑Rechner Code by Sascha Keilhauer</footer>
+  </div>
+
+  <!-- Modal: Referenzfälle -->
+  <div class="modal" id="refModal" aria-hidden="true" role="dialog" aria-label="Referenzfälle">
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong>Referenzfälle</strong>
+        <div class="btn-row">
+          <button class="btn ghost" id="btnCollapse" type="button">Alle zuklappen</button>
+          <button class="x" id="btnClose" type="button" title="Schließen" aria-label="Schließen">✕</button>
+        </div>
+      </div>
+      <div class="modal-body" id="refBody"></div>
+    </div>
+  </div>
+
+  <script>
+    // =============================================================
+    // 8) SCRIPT – Saubere Module & Zentral konfigurierbar
+    // =============================================================
+
+    // ---- 8.1 CONFIG (alles Änderbare auf einen Blick) ----
+    const CONFIG = {
+      STORAGE_KEYS: { theme: 's4_theme' },
+      FACTORS: {              // Schnittspiel‑Faktoren (gesamt)
+        stahl: 0.2,
+        edelstahl: 0.2,
+        aluminium: 0.1,
+      },
+      UI: {
+        scrollOnSmallOnce: true,  // mobiles Auto‑Scroll beim ersten gültigen Ergebnis
+        smallWidth: 540
+      }
+    };
+
+    // ---- 8.2 TEXTS (alle Texte/Labels zentral) ----
+    const TEXTS = {
+      heroDefault: 'Bitte Eingaben machen',
+      heroNoteMatrix: 'Matrize = Stempelmaß + Schnittspiel (gesamt).',
+      warnUnknownMat: 'Material nicht angegeben: Varianten Stahl/Edelstahl/Aluminium werden angezeigt.',
+      shapeLabels: { round:'Rund', square:'Quadrat', rect:'Rechteck', slot:'Langloch', hex:'Hex' },
+      matLabels: { stahl:'Stahl', edelstahl:'Edelstahl', aluminium:'Aluminium', unknown:'Material ?' },
+      dimsHelpUnknown: 'Form egal → nur Schnittspiel. Für Matrize Form wählen.'
+    };
+
+    // ---- 8.3 Helpers (Format/DOM/Clipboard/Toast) ----
+    const nf = (v,d=2)=> new Intl.NumberFormat('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d}).format(v);
+    const parseLocale = (s) => { if (typeof s === 'number') return s; if (s == null) return NaN; let str = String(s).trim().replace(/\s+/g,''); str = str.replace(/,/g,'.'); const v = parseFloat(str); return isNaN(v) ? NaN : v; };
+    const el = (id)=> document.getElementById(id);
+
+    const copyText = async (t)=>{ try{ await navigator.clipboard.writeText(t); toast('Kopiert: '+t);}catch(e){ alert(t);} }
+    const toast = (m)=>{ const n=document.createElement('div'); n.textContent=m; Object.assign(n.style,{position:'fixed',bottom:'18px',right:'18px',background:'rgba(0,0,0,.85)',color:'#fff',padding:'10px 12px',borderRadius:'10px',zIndex:9999}); document.body.appendChild(n); setTimeout(()=>n.remove(),1500) };
+
+    // ---- 8.4 Regeln (Rechenlogik) ----
+    function getClearance(material,t){
+      const out=[]; const push=(key,label,f)=>{ const total=t*f; out.push({key,label,total}); };
+      if(material==='stahl'||material==='edelstahl'){
+        push(material, material==='stahl'?TEXTS.matLabels.stahl:TEXTS.matLabels.edelstahl, CONFIG.FACTORS[material]);
+      } else if(material==='aluminium'){
+        push('aluminium',TEXTS.matLabels.aluminium, CONFIG.FACTORS.aluminium);
+      } else {
+        push('stahl',TEXTS.matLabels.stahl, CONFIG.FACTORS.stahl);
+        push('edelstahl',TEXTS.matLabels.edelstahl, CONFIG.FACTORS.edelstahl);
+        push('aluminium',TEXTS.matLabels.aluminium, CONFIG.FACTORS.aluminium);
+      }
+      return out;
+    }
+
+    function calcMatrix(shape,dims,clearTotal){
+      if(!shape||shape==='unknown'||!dims) return null; const add=(v)=> v+clearTotal;
+      switch(shape){
+        case 'round': return { label:TEXTS.shapeLabels.round, stamp:`Ø ${nf(dims.d,2)}`, out:`Ø ${nf(add(dims.d),2)}` };
+        case 'square': return { label:TEXTS.shapeLabels.square, stamp:`${nf(dims.a,2)} × ${nf(dims.a,2)}`, out:`${nf(add(dims.a),2)} × ${nf(add(dims.a),2)}` };
+        case 'rect': return { label:TEXTS.shapeLabels.rect, stamp:`${nf(dims.L,2)} × ${nf(dims.B,2)}`, out:`${nf(add(dims.L),2)} × ${nf(add(dims.B),2)}` };
+        case 'slot': return { label:TEXTS.shapeLabels.slot, stamp:`${nf(dims.L,2)} × ${nf(dims.B,2)}`, out:`${nf(add(dims.L),2)} × ${nf(add(dims.B),2)}` };
+        case 'hex': return { label:TEXTS.shapeLabels.hex, stamp:`SW ${nf(dims.SW,2)}`, out:`SW ${nf(add(dims.SW),2)}` };
+        default: return null;
+      }
+    }
+
+    function mapCodes(total){
+      const C = total/2; // pro Seite
+      return { C:`C${nf(C,2)}`, CL:`CL${nf(total,2)}`, TC:`TC+${nf(total,2)}` };
+    }
+
+    // ---- 8.5 STATE ----
+    const STATE = {
+      shape: 'unknown', material: 'unknown', t: NaN, dims: null,
+      scrolledOnce: false
+    };
+
+    // ---- 8.6 UI (Render‑Funktionen) ----
+    function labelMat(k){ return TEXTS.matLabels[k] ?? TEXTS.matLabels.unknown }
+
+    function renderDimFields(){
+      const s = el('shape').value; let html='';
+      const input=(id,label)=>`<div><label for="${id}">${label}</label><input id="${id}" type="text" inputmode="decimal" placeholder="0,0" /></div>`;
+      if(s==='round') html=input('d','Durchmesser Ø [mm]');
+      else if(s==='square') html=input('a','Kantenlänge a [mm]');
+      else if(s==='rect'||s==='slot') html=`<div class="row">${input('L','Länge L [mm]')}${input('B','Breite B [mm]')}</div>`;
+      else if(s==='hex') html=input('SW','Schlüsselweite SW [mm]');
+      else html=`<div class="note">${TEXTS.dimsHelpUnknown}</div>`;
+      el('dims').innerHTML=html; bindDynamicInputs();
+    }
+
+    function readDims(){ const g=(id)=> parseLocale(el(id)?.value);
+      switch(el('shape').value){
+        case 'round': return {d:g('d')};
+        case 'square': return {a:g('a')};
+        case 'rect': case 'slot': return {L:g('L'),B:g('B')};
+        case 'hex': return {SW:g('SW')};
+        default: return null;
+      }
+    }
+    const validDims=(d)=> !d || Object.values(d).every(v=> typeof v==='number' && v>0);
+
+    function renderAll(){
+      // State sammeln
+      STATE.t = parseLocale(el('thk').value);
+      STATE.material = el('material').value;
+      STATE.shape = el('shape').value;
+      STATE.dims = readDims();
+
+      const heroText=el('heroText'), heroBadges=el('heroBadges'), heroNote=el('heroNote');
+      const warnBox=el('warnBox'); warnBox.style.display='none'; heroBadges.innerHTML=''; heroNote.textContent='';
+
+      if(!(STATE.t>0)){
+        heroText.textContent=TEXTS.heroDefault;
+        el('tblClearance').innerHTML=''; el('tblMatrix').innerHTML=''; el('codeBar').innerHTML='';
+        return;
+      }
+
+      const clears = getClearance(STATE.material, STATE.t);
+      el('tblClearance').innerHTML = clears.map(c=>`<tr><td>${c.label}</td><td>${nf(c.total,2)}</td></tr>`).join('');
+
+      let matrixRow='';
+      if(STATE.shape!=='unknown' && validDims(STATE.dims)){
+        const used=clears[0]; const m=calcMatrix(STATE.shape, STATE.dims, used.total);
+        if(m){
+          matrixRow = `<tr><td>${m.label}</td><td>${m.stamp}</td><td>${m.out}</td></tr>`;
+          heroText.textContent=m.out;
+          heroBadges.innerHTML=`<span class="badge">${m.label}</span><span class="chip">t ${nf(STATE.t,2)} mm</span><span class="chip">${labelMat(STATE.material)}</span>`;
+          heroNote.textContent=TEXTS.heroNoteMatrix;
+        }
+      } else {
+        heroText.textContent='Schnittspiel';
+        heroBadges.innerHTML=`<span class="chip">t ${nf(STATE.t,2)} mm</span>` + (STATE.material==='unknown'? `<span class="badge">Material unbekannt</span>`:`<span class="chip">${labelMat(STATE.material)}</span>`);
+        if(STATE.material==='unknown'){ warnBox.style.display='block'; warnBox.textContent=TEXTS.warnUnknownMat; }
+      }
+      el('tblMatrix').innerHTML=matrixRow;
+
+      // Auto‑Scroll auf kleinen Screens (einmalig)
+      if (CONFIG.UI.scrollOnSmallOnce && window.innerWidth <= CONFIG.UI.smallWidth && STATE.t>0 && !STATE.scrolledOnce) {
+        STATE.scrolledOnce = true; try { el('heroCard').scrollIntoView({behavior:'smooth', block:'start'}); } catch(e){}
+      }
+
+      const codeBar=el('codeBar'); codeBar.innerHTML='';
+      if(STATE.material!=='unknown'){
+        const used=clears[0]; const codes=mapCodes(used.total);
+        codeBar.innerHTML = codePill('C',codes.C)+codePill('CL',codes.CL)+codePill('TC',codes.TC);
+      } else {
+        codeBar.innerHTML = `<div class="note">Material unbekannt → keine eindeutigen Matrizenbezeichnungen.</div>`;
+      }
+    }
+
+    function codePill(label,value){ return `<div class="codepill"><strong>${label}</strong><span>${value}</span><button class="copy" type="button" onclick="copyText('${value}')">Kopieren</button></div>` }
+
+    // ---- 8.7 Events/Binding ----
+    function bindStaticInputs(){
+      const sShape=el('shape');
+      sShape.addEventListener('change', ()=>{ renderDimFields(); renderAll(); });
+      sShape.addEventListener('input',  ()=>{ renderDimFields(); renderAll(); });
+
+      const mat=el('material');
+      mat.addEventListener('input', renderAll); mat.addEventListener('change', renderAll);
+
+      const thk=el('thk');
+      const norm=()=>{ const v=parseLocale(thk.value); if(!isNaN(v)) thk.value = nf(v,1); renderAll(); };
+      thk.addEventListener('input', renderAll); thk.addEventListener('change', norm); thk.addEventListener('blur', norm);
+    }
+
+    function bindDynamicInputs(){
+      ['d','a','L','B','SW'].forEach(id=>{
+        const e=el(id); if(!e) return;
+        const norm=()=>{ const v=parseLocale(e.value); if(!isNaN(v)) e.value = nf(v,1); renderAll(); };
+        e.addEventListener('input', renderAll);
+        e.addEventListener('change', norm);
+        e.addEventListener('blur', norm);
+      });
+    }
+
+    // ---- 8.8 Referenzfälle (Modal + Akkordeon) ----
+    const refs = [
+      { title:'Rund Ø17 · Edelstahl · t=3,0', shape:'round', dims:{d:17.0}, mat:'edelstahl', t:3.0 },
+      { title:'Hex SW 7,1 · Stahl · t=2,0', shape:'hex', dims:{SW:7.1}, mat:'stahl', t:2.0 },
+      { title:'Rechteck 10×4 · Aluminium · t=2,0', shape:'rect', dims:{L:10.0,B:4.0}, mat:'aluminium', t:2.0 },
+      { title:'Langloch 30×15 · Aluminium · t=1,0', shape:'slot', dims:{L:30.0,B:15.0}, mat:'aluminium', t:1.0 },
+      { title:'Form egal · Edelstahl · t=2,0', shape:'unknown', dims:null, mat:'edelstahl', t:2.0 },
+      { title:'Nur Dicke 3,0 · Material unbekannt', shape:'unknown', dims:null, mat:'unknown', t:3.0 }
+    ];
+
+    function openRef(){ const refModal=el('refModal'); refModal.classList.add('open'); refModal.setAttribute('aria-hidden','false'); renderRef(); document.addEventListener('keydown', escClose); }
+    function closeRef(){ const refModal=el('refModal'); refModal.classList.remove('open'); refModal.setAttribute('aria-hidden','true'); document.removeEventListener('keydown', escClose); }
+    function escClose(e){ if(e.key==='Escape') closeRef(); }
+
+    function renderRef(){
+      const refBody=el('refBody');
+      refBody.innerHTML = refs.map((ex,i)=>{
+        const cl = getClearance(ex.mat, ex.t);
+        let end='–', codes={C:'–',CL:'–',TC:'–'};
+        if(ex.mat!=='unknown' && ex.shape!=='unknown' && ex.dims){ const used=cl[0]; const m=calcMatrix(ex.shape, ex.dims, used.total); end=m?m.out:'–'; codes=mapCodes(used.total); }
+        const dimsTxt = ex.dims? Object.entries(ex.dims).map(([k,v])=>`${k} ${nf(v,2)}`).join(', ') : '–';
+        const clTxt = cl.map(c=>`${c.label} ${nf(c.total,2)} (gesamt)`).join(' · ');
+        return `
+          <details class="acc" data-idx="${i}">
+            <summary>${i+1}. ${ex.title}</summary>
+            <div class="inner">
+              <div class="note">Maße: ${dimsTxt} · t ${nf(ex.t,2)} mm · Material: ${labelMat(ex.mat)}</div>
+              <div class="mt-3">Schnittspiel: ${clTxt}</div>
+              <div class="mt-3">Endmaß: <strong>${end}</strong></div>
+              <div class="codebar mt-3">${codePill('C',codes.C)}${codePill('CL',codes.CL)}${codePill('TC',codes.TC)}</div>
+              <div class="btn-row mt-4">
+                <button class="btn" type="button" onclick="applyRef(${i})">In Eingaben laden</button>
+                ${end!=='–'? `<button class="btn ghost" type="button" onclick="copyText('${end}')">Endmaß kopieren</button>`:''}
+              </div>
+            </div>
+          </details>`;
+      }).join('');
+      [...refBody.querySelectorAll('details.acc')].forEach(d=> d.addEventListener('toggle', ()=>{ if(d.open){ [...refBody.querySelectorAll('details.acc')].forEach(x=>{ if(x!==d) x.removeAttribute('open'); }); }}));
+    }
+
+    function applyRef(i){ const ex=refs[i]; el('shape').value=ex.shape; renderDimFields(); el('material').value=ex.mat; el('thk').value = nf(ex.t,1); if(ex.dims){ for(const k in ex.dims){ const f=el(k); if(f) f.value = nf(ex.dims[k],1); } } renderAll(); closeRef(); }
+
+    // ---- 8.9 Theme‑Handling (Auto/Dark/Light) ----
+    (function themeInit(){
+      const select = document.getElementById('themeMode');
+      const saved = localStorage.getItem(CONFIG.STORAGE_KEYS.theme) || 'auto';
+      if(select){ select.value = saved; }
+      applyTheme(saved);
+      if(select){ select.addEventListener('change', ()=>{ const v=select.value; localStorage.setItem(CONFIG.STORAGE_KEYS.theme, v); applyTheme(v); }); }
+      function applyTheme(v){ document.documentElement.setAttribute('data-theme', v); }
+    })();
+
+    // ---- 8.10 Init (Events, Modal, Tests) ----
+    function init(){
+      renderDimFields();
+      bindStaticInputs();
+      renderAll();
+
+      // Header‑Buttons
+      el('btnReset').addEventListener('click', ()=>{ el('shape').value='unknown'; el('material').value='unknown'; el('thk').value=''; renderDimFields(); STATE.scrolledOnce=false; renderAll(); });
+      el('btnRef').addEventListener('click', openRef);
+      el('btnClose').addEventListener('click', closeRef);
+      el('btnCollapse').addEventListener('click', ()=>{ [...el('refBody').querySelectorAll('details[open]')].forEach(d=>d.removeAttribute('open')); });
+      el('refModal').addEventListener('click',(e)=>{ if(e.target===el('refModal')) closeRef(); });
+    }
+    document.addEventListener('DOMContentLoaded', init);
+
+    // ---- 8.11 Mini‑Tests (Konsole) ----
+    (function runTests(){
+      try{
+        console.group('S4 Rechner – Tests');
+        // Test 1: Stahl, t=2 → 0,4 gesamt
+        const c1=getClearance('stahl',2);
+        console.assert(c1.length===1 && Math.abs(c1[0].total-0.4)<1e-9, 'Test1: Stahl t=2 sollte 0,4 sein');
+        // Test 2: Unknown, t=3 → drei Einträge 0,6/0,6/0,3
+        const c2=getClearance('unknown',3).map(x=>x.total);
+        console.assert(c2.length===3 && Math.abs(c2[0]-0.6)<1e-9 && Math.abs(c2[1]-0.6)<1e-9 && Math.abs(c2[2]-0.3)<1e-9, 'Test2: Unknown t=3 Werte falsch');
+        // Test 3: calcMatrix Rund Ø17, Edelstahl t=3 → clear=0,6, End Ø17,60
+        const cm=calcMatrix('round',{d:17},0.6);
+        console.assert(cm && /17,60/.test(cm.out), 'Test3: Ø17 + 0,6 → Ø17,60 erwartet');
+        // Test 4: mapCodes 0,6 → C0,30 / CL0,60 / TC+0,60
+        const m=mapCodes(0.6);
+        console.assert(m.C.includes('0,30') && m.CL.includes('0,60') && m.TC.includes('0,60'), 'Test4: Matrizenbezeichnungen stimmen nicht');
+        console.groupEnd();
+      }catch(err){ console.error('Tests fehlgeschlagen:', err); }
+    })();
+  </script>
+</body>
+</html>
